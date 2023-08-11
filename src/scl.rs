@@ -197,7 +197,7 @@ pub fn dec(encs: &[u8]) -> Result<Vec<u32>> {
     let mut hdr: u8 = hdrs[0];
     let mut hdr_shf_len: u8 = 0;
 
-    // Iterate through pointers decoded bytes.
+    // Iterate through decoded bytes.
     while !decs.is_empty() {
         // After four integer decompressions,
         // Get the next header and reset the shift length.
