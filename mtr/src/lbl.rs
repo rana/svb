@@ -13,6 +13,7 @@ pub enum Lbl {
     B,
     C,
     D,
+    E,
     Len(u32),
 }
 impl fmt::Display for Lbl {
@@ -24,6 +25,7 @@ impl fmt::Display for Lbl {
             Lbl::B => write!(f, "b"),
             Lbl::C => write!(f, "c"),
             Lbl::D => write!(f, "d"),
+            Lbl::E => write!(f, "e"),
             Lbl::Len(x) => {
                 if f.alternate() { write!(f, "len") } else { write!(f, "len({})", x) }
             }

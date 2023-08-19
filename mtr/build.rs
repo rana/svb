@@ -82,6 +82,7 @@ pub fn emit_bens_imports() -> TokenStream {
         use crate::fns::scl_b;
         use crate::fns::scl_c;
         use crate::fns::scl_d;
+        use crate::fns::scl_e;
     });
 
     stm
@@ -143,10 +144,21 @@ pub fn emit_bens_run_mtr_qrys() -> TokenStream {
             //     itr,
             // })?;
 
-            // Scalar implementation: A vs D
+            // // Scalar implementation: A vs D
+            // set.qry(Qry{
+            //     frm: vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::D]],
+            //     grp: Some(vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::D]]),
+            //     srt: Some(Lbl::Len(0)),
+            //     sta: Some(Sta::Mdn),
+            //     trn: Some(Lbl::Len(0)),
+            //     cmp: true,
+            //     itr,
+            // })?;
+
+            // Scalar implementation: A vs E
             set.qry(Qry{
-                frm: vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::D]],
-                grp: Some(vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::D]]),
+                frm: vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::E]],
+                grp: Some(vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::E]]),
                 srt: Some(Lbl::Len(0)),
                 sta: Some(Sta::Mdn),
                 trn: Some(Lbl::Len(0)),
@@ -177,6 +189,7 @@ pub fn emit_bens_new_mtr_set() -> TokenStream {
         emit_bens_scl_b_enc,
         emit_bens_scl_c_enc,
         emit_bens_scl_d_enc,
+        emit_bens_scl_e_enc,
     ];
     tok_bens
         .iter()
@@ -309,6 +322,38 @@ pub fn emit_bens_scl_d_enc() -> TokenStream {
                 let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
                 tme.borrow_mut().start();
                 let ret = scl_d::enc(&vals);
+                tme.borrow_mut().stop();
+                ret
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+pub fn emit_bens_scl_e_enc() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Scl, Lbl::Enc, Lbl::E]);
+    });
+    for len in RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+                let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
+                tme.borrow_mut().start();
+                let ret = scl_e::enc(&vals);
                 tme.borrow_mut().stop();
                 ret
             })?;
