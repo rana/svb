@@ -1,0 +1,13 @@
+[package]
+name = "svb"
+version = "0.2.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.75"
+itr = { git = "https://github.com/rana/itr.git" }
+
+[dev-dependencies]
+rand = "0.8.5"
