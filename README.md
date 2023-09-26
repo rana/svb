@@ -23,10 +23,10 @@ Bytes are organized as `total integer count`, followed by `control headers`, fol
 
 The two bits are called a control header.
 
-| Compression Size | 1 byte | 2 bytes | 3 bytes | 4 bytes |
-|------------------|--------|---------|---------|---------|
-| Bit value        | `00`   | `01`    | `10`    | `11`    |
-| Integer value    | 0      | 1       | 2       | 3       |
+| Compression Size      | 1 byte | 2 bytes | 3 bytes | 4 bytes |
+|-----------------------|--------|---------|---------|---------|
+| Bit value             | `00`   | `01`    | `10`    | `11`    |
+| Integer value of bits | 0      | 1       | 2       | 3       |
 
 > Compression size represented as two bits. 
 
@@ -46,7 +46,7 @@ Within the header byte, bit values are indexed from right-to-left.
 
 Lemire blog: [Stream VByte: breaking new speed records for integer compression](https://lemire.me/blog/2017/09/27/stream-vbyte-breaking-new-speed-records-for-integer-compression/)
 
-asXiv article: [Stream VByte: Faster Byte-Oriented Integer Compression](https://arxiv.org/abs/1709.08990)
+arXiv article: [Stream VByte: Faster Byte-Oriented Integer Compression](https://arxiv.org/abs/1709.08990)
 
 Lemire C code: [streamvbyte](https://github.com/lemire/streamvbyte)
 * Good overview of format in README.
