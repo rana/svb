@@ -1,4 +1,4 @@
-use proc_macro2::{Ident, Literal, Span, TokenStream};
+use proc_macro2::{Literal, TokenStream};
 use quote::quote;
 use std::fs;
 use std::ops::Range;
@@ -17,7 +17,6 @@ pub fn write_all_files(dir: &str) -> std::io::Result<()> {
     fs::create_dir_all(pth)?;
 
     write_one_fle(emit_main_fle(), &pth.join("main.rs"))?;
-    write_one_fle(emit_bens_fle(), &pth.join("bens.rs"))?;
 
     Ok(())
 }
@@ -29,143 +28,94 @@ pub fn write_one_fle(fle_stm: TokenStream, fle_pth: &PathBuf) -> std::io::Result
     fs::write(fle_pth, fmt)
 }
 
+/// Emits a token stream for the `main` imports.
+pub fn emit_imports() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    stm.extend(quote! {
+        #![allow(dead_code)]
+        #![allow(unused_doc_comments)]
+        mod fns;
+        mod lbl;
+        use anyhow::Result;
+        use ben::*;
+        use itr::*;
+        use crate::lbl::Lbl::{self, *};
+        use crate::fns::*;
+        use std::collections::HashMap;
+    });
+
+    stm
+}
+
 /// Emits a token stream for the main file.
 pub fn emit_main_fle() -> TokenStream {
-    let tok_fns = [emit_main_imports, emit_main_fn];
+    let tok_fns = [emit_imports, emit_main_fn, emit_new_stdy];
     tok_fns.iter().fold(TokenStream::new(), |mut stm, tok_fn| {
         stm.extend(tok_fn());
         stm
     })
 }
 
-/// Emits a token stream for the `main` imports.
-pub fn emit_main_imports() -> TokenStream {
-    let mut stm = TokenStream::new();
-
-    stm.extend(quote! {
-        #![allow(dead_code)]
-        mod bens;
-        mod fns;
-        mod lbl;
-        use anyhow::Result;
-        use bens::*;
-    });
-
-    stm
-}
-
-/// Emits a token stream for the `main` function.
 pub fn emit_main_fn() -> TokenStream {
     let mut stm = TokenStream::new();
 
     stm.extend(quote! {
-
+        /// Runs a benchmark function analysis.
+        ///
+        /// cd mtr
+        /// clear && cargo r -q --profile release
         pub fn main() -> Result<()> {
-            run_mtr_qrys()?;
-            Ok(())
-        }
+            let mut stdy = new_stdy()?;
+            let itr: u16 = 64;
+            let mut qry = QryBld::new();
 
-    });
 
-    stm
-}
+            let scl_enc_a = qry.sel(&[Scl, Enc, A]);
+            let scl_enc_b = qry.sel(&[Scl, Enc, B]);
+            let scl_enc_c = qry.sel(&[Scl, Enc, C]);
+            let scl_enc_d = qry.sel(&[Scl, Enc, D]);
+            let scl_enc_e = qry.sel(&[Scl, Enc, E]);
+            let scl_enc_f = qry.sel(&[Scl, Enc, F]);
+            let scl_enc_g = qry.sel(&[Scl, Enc, G]);
+            let scl_dat_a = qry.sel(&[Scl, Dat, A]);
+            let scl_dat_e = qry.sel(&[Scl, Dat, E]);
+            let scl_dat_g = qry.sel(&[Scl, Dat, G]);
 
-pub fn emit_bens_imports() -> TokenStream {
-    let mut stm = TokenStream::new();
+            /// Scalar implementation: A vs B
+            qry.cmp(scl_enc_a, scl_enc_b);
 
-    stm.extend(quote! {
-        use anyhow::Result;
-        use ben::*;
-        use itr::*;
-        use crate::lbl::Lbl;
-        use crate::fns::scl_a;
-        use crate::fns::scl_b;
-        use crate::fns::scl_c;
-        use crate::fns::scl_d;
-        use crate::fns::scl_e;
-    });
+            /// Scalar implementation: A vs C
+            qry.cmp(scl_enc_a, scl_enc_c);
 
-    stm
-}
+            /// Scalar implementation: B vs C
+            qry.cmp(scl_enc_b, scl_enc_c);
 
-pub fn emit_bens_fle() -> TokenStream {
-    let tok_fns = [
-        emit_bens_imports,
-        emit_bens_run_mtr_qrys,
-        emit_bens_new_mtr_set,
-    ];
-    let ret = tok_fns.iter().fold(TokenStream::new(), |mut stm, tok_fn| {
-        stm.extend(tok_fn());
-        stm
-    });
+            /// Scalar implementation: A vs D
+            qry.cmp(scl_enc_a, scl_enc_d);
 
-    ret
-}
+            /// Scalar implementation: A vs E
+            qry.cmp(scl_enc_a, scl_enc_e);
 
-pub fn emit_bens_run_mtr_qrys() -> TokenStream {
-    let mut stm = TokenStream::new();
+            /// Scalar implementation: D vs E
+            qry.cmp(scl_enc_d, scl_enc_e);
 
-    stm.extend(quote! {
-        /// Run analysis on benchmark functions.
-        pub fn run_mtr_qrys() -> Result<()> {
-            let set = new_mtr_set()?;
-            let itr: u32 = 64;
+            /// Scalar implementation: E vs F
+            qry.cmp(scl_enc_e, scl_enc_f);
 
-            // // Scalar implementation: A vs B
-            // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::B]],
-            //     grp: Some(vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::B]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
-            //     cmp: true,
-            //     itr,
-            // })?;
+            /// Scalar implementation: A vs F
+            qry.cmp(scl_enc_a, scl_enc_f);
 
-            // // Scalar implementation: A vs C
-            // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::C]],
-            //     grp: Some(vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::C]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
-            //     cmp: true,
-            //     itr,
-            // })?;
+            /// Scalar implementation: F vs G
+            qry.cmp(scl_enc_f, scl_enc_g);
 
-            // // Scalar implementation: B vs C
-            // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Scl, Lbl::Enc, Lbl::B], vec![Lbl::Scl, Lbl::Enc, Lbl::C]],
-            //     grp: Some(vec![vec![Lbl::Scl, Lbl::Enc, Lbl::B], vec![Lbl::Scl, Lbl::Enc, Lbl::C]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
-            //     cmp: true,
-            //     itr,
-            // })?;
+            /// Scalar implementation: Dat: A vs E
+            qry.cmp(scl_dat_a, scl_dat_e);
 
-            // // Scalar implementation: A vs D
-            // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::D]],
-            //     grp: Some(vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::D]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
-            //     cmp: true,
-            //     itr,
-            // })?;
+            /// Scalar implementation: Dat: A vs G
+            qry.cmp(scl_dat_a, scl_dat_g);
 
-            // Scalar implementation: A vs E
-            set.qry(Qry{
-                frm: vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::E]],
-                grp: Some(vec![vec![Lbl::Scl, Lbl::Enc, Lbl::A], vec![Lbl::Scl, Lbl::Enc, Lbl::E]]),
-                srt: Some(Lbl::Len(0)),
-                sta: Some(Sta::Mdn),
-                trn: Some(Lbl::Len(0)),
-                cmp: true,
-                itr,
-            })?;
-
+            stdy.run(qry, itr)?;
             Ok(())
         }
     });
@@ -173,23 +123,28 @@ pub fn emit_bens_run_mtr_qrys() -> TokenStream {
     stm
 }
 
-pub fn emit_bens_new_mtr_set() -> TokenStream {
+pub fn emit_new_stdy() -> TokenStream {
     let mut stm = TokenStream::new();
 
     // fn: start
     stm.extend(quote! {
-        /// Returns a populated set of benchmark functions.
-        pub fn new_mtr_set() -> Result<Set<Lbl>>
+        /// Returns a study with benchmark functions ready to be run.
+        pub fn new_stdy() -> Result<Stdy<Lbl>>
     });
 
     // fn: inner
     let mut stm_inr = TokenStream::new();
     let tok_bens = [
-        emit_bens_scl_a_enc,
-        emit_bens_scl_b_enc,
-        emit_bens_scl_c_enc,
-        emit_bens_scl_d_enc,
-        emit_bens_scl_e_enc,
+        emit_bens_scl_enc_a,
+        emit_bens_scl_enc_b,
+        emit_bens_scl_enc_c,
+        emit_bens_scl_enc_d,
+        emit_bens_scl_enc_e,
+        emit_bens_scl_enc_f,
+        emit_bens_scl_enc_g,
+        emit_bens_scl_dat_a,
+        emit_bens_scl_dat_e,
+        emit_bens_scl_dat_g,
     ];
     tok_bens
         .iter()
@@ -198,9 +153,9 @@ pub fn emit_bens_new_mtr_set() -> TokenStream {
     // fn: end
     stm.extend(quote! {
         {
-            let ret = Set::new();
+            let mut stdy = Stdy::new();
             #stm_inr
-            Ok(ret)
+            Ok(stdy)
         }
     });
 
@@ -209,162 +164,282 @@ pub fn emit_bens_new_mtr_set() -> TokenStream {
 
 pub static RNG: Range<u32> = 4..18;
 
-pub fn emit_bens_scl_a_enc() -> TokenStream {
+pub fn emit_bens_scl_enc_a() -> TokenStream {
     let mut stm = TokenStream::new();
 
     // sec: inner
     let mut stm_inr = TokenStream::new();
-    let idn_sec = Ident::new("sec", Span::call_site());
-    stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Scl, Lbl::Enc, Lbl::A]);
-    });
     for len in RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            x.ins_prm(Len(#lit_len), |tme| {
                 let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
                 tme.borrow_mut().start();
                 let ret = scl_a::enc(&vals);
                 tme.borrow_mut().stop();
                 ret
-            })?;
+            });
         });
     }
 
     // sec: end
     stm.extend(quote! {
-        {
+        stdy.reg_bld(&[Scl, Enc, A], |x| {
             #stm_inr
-        }
+        });
     });
 
     stm
 }
 
-pub fn emit_bens_scl_b_enc() -> TokenStream {
+pub fn emit_bens_scl_enc_b() -> TokenStream {
     let mut stm = TokenStream::new();
 
     // sec: inner
     let mut stm_inr = TokenStream::new();
-    let idn_sec = Ident::new("sec", Span::call_site());
-    stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Scl, Lbl::Enc, Lbl::B]);
-    });
     for len in RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            x.ins_prm(Len(#lit_len), |tme| {
                 let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
                 tme.borrow_mut().start();
                 let ret = scl_b::enc(&vals);
                 tme.borrow_mut().stop();
                 ret
-            })?;
+            });
         });
     }
 
     // sec: end
     stm.extend(quote! {
-        {
+        stdy.reg_bld(&[Scl, Enc, B], |x| {
             #stm_inr
-        }
+        });
     });
 
     stm
 }
 
-pub fn emit_bens_scl_c_enc() -> TokenStream {
+pub fn emit_bens_scl_enc_c() -> TokenStream {
     let mut stm = TokenStream::new();
 
     // sec: inner
     let mut stm_inr = TokenStream::new();
-    let idn_sec = Ident::new("sec", Span::call_site());
-    stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Scl, Lbl::Enc, Lbl::C]);
-    });
     for len in RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            x.ins_prm(Len(#lit_len), |tme| {
                 let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
                 tme.borrow_mut().start();
                 let ret = scl_c::enc(&vals);
                 tme.borrow_mut().stop();
                 ret
-            })?;
+            });
         });
     }
 
     // sec: end
     stm.extend(quote! {
-        {
+        stdy.reg_bld(&[Scl, Enc, C], |x| {
             #stm_inr
-        }
+        });
     });
 
     stm
 }
 
-
-pub fn emit_bens_scl_d_enc() -> TokenStream {
+pub fn emit_bens_scl_enc_d() -> TokenStream {
     let mut stm = TokenStream::new();
 
     // sec: inner
     let mut stm_inr = TokenStream::new();
-    let idn_sec = Ident::new("sec", Span::call_site());
-    stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Scl, Lbl::Enc, Lbl::D]);
-    });
     for len in RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            x.ins_prm(Len(#lit_len), |tme| {
                 let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
                 tme.borrow_mut().start();
                 let ret = scl_d::enc(&vals);
                 tme.borrow_mut().stop();
                 ret
-            })?;
+            });
         });
     }
 
     // sec: end
     stm.extend(quote! {
-        {
+        stdy.reg_bld(&[Scl, Enc, D], |x| {
             #stm_inr
-        }
+        });
     });
 
     stm
 }
 
-pub fn emit_bens_scl_e_enc() -> TokenStream {
+pub fn emit_bens_scl_enc_e() -> TokenStream {
     let mut stm = TokenStream::new();
 
     // sec: inner
     let mut stm_inr = TokenStream::new();
-    let idn_sec = Ident::new("sec", Span::call_site());
-    stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Scl, Lbl::Enc, Lbl::E]);
-    });
     for len in RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            x.ins_prm(Len(#lit_len), |tme| {
                 let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
                 tme.borrow_mut().start();
                 let ret = scl_e::enc(&vals);
                 tme.borrow_mut().stop();
                 ret
-            })?;
+            });
         });
     }
 
     // sec: end
     stm.extend(quote! {
-        {
+        stdy.reg_bld(&[Scl, Enc, E], |x| {
             #stm_inr
-        }
+        });
+    });
+
+    stm
+}
+
+pub fn emit_bens_scl_enc_f() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    for len in RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            x.ins_prm(Len(#lit_len), |tme| {
+                let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
+                tme.borrow_mut().start();
+                let ret = scl_f::enc(&vals);
+                tme.borrow_mut().stop();
+                ret
+            });
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        stdy.reg_bld(&[Scl, Enc, F], |x| {
+            #stm_inr
+        });
+    });
+
+    stm
+}
+
+pub fn emit_bens_scl_enc_g() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    for len in RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            x.ins_prm(Len(#lit_len), |tme| {
+                let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
+                tme.borrow_mut().start();
+                let ret = scl_g::enc(&vals);
+                tme.borrow_mut().stop();
+                ret
+            });
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        stdy.reg_bld(&[Scl, Enc, G], |x| {
+            #stm_inr
+        });
+    });
+
+    stm
+}
+
+
+pub fn emit_bens_scl_dat_a() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    for len in RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            x.ins_prm(Len(#lit_len), |tme| {
+                let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
+                tme.borrow_mut().start();
+                let ret = scl_a::dat_byt_len(&vals);
+                tme.borrow_mut().stop();
+                ret
+            });
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        stdy.reg_bld(&[Scl, Dat, A], |x| {
+            #stm_inr
+        });
+    });
+
+    stm
+}
+
+pub fn emit_bens_scl_dat_e() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    for len in RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            x.ins_prm(Len(#lit_len), |tme| {
+                let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
+                tme.borrow_mut().start();
+                let ret = scl_e::dat_byt_len(&vals);
+                tme.borrow_mut().stop();
+                ret
+            });
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        stdy.reg_bld(&[Scl, Dat, E], |x| {
+            #stm_inr
+        });
+    });
+
+    stm
+}
+
+pub fn emit_bens_scl_dat_g() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    for len in RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            x.ins_prm(Len(#lit_len), |tme| {
+                let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
+                tme.borrow_mut().start();
+                let ret = scl_g::dat_byt_len(&vals);
+                tme.borrow_mut().stop();
+                ret
+            });
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        stdy.reg_bld(&[Scl, Dat, G], |x| {
+            #stm_inr
+        });
     });
 
     stm

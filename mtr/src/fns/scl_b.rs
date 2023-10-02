@@ -53,7 +53,7 @@ pub fn hdrs_and_dat_len(decs: &[u32]) -> (Vec<u8>, usize) {
         let hdr = (val > 0xFF) as u8 + (val > 0xFFFF) as u8 + (val > 0xFFFFFF) as u8;
         // println!("val:{}, hdr:{:02b}, hdr_int:{}", val, hdr, hdr);
 
-        // Store the header.
+        // Store the current header.
         hdrs[0] |= hdr << hdr_shf_len;
         // Increment the shift length for two bits.
         hdr_shf_len += 2;

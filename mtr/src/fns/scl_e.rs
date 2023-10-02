@@ -83,8 +83,8 @@ pub fn enc(decs: &[u32]) -> Result<Vec<u8>> {
         &mut *u8_slc_ptr
     };
 
-    // Setup header variables used for compression.
-    // `hdr_shf_len` cycles 0, 2, 4, 6, 0, 2, 4, 6 ...
+    // Setup header variables. Used for compression.
+    // `hdr_shf_len` cycles through 0, 2, 4, 6, 0, 2, 4, 6 ...
     let mut hdr: u8 = 0;
     let mut hdr_shf_len: u8 = 0;
 
@@ -94,8 +94,8 @@ pub fn enc(decs: &[u32]) -> Result<Vec<u8>> {
         let dec = *dec;
 
         // After four integer compressions,
-        // Write the header.
-        // Reset the header and shift length.
+        // Write a header byte.
+        // Reset the current header and shift length.
         if hdr_shf_len == 8 {
             hdrs[0] = hdr;
             hdrs = &mut hdrs[1..];

@@ -1,31 +1,55 @@
-//! Scalar implementation of the stream variable byte compression algorithm.
-//!
-//!   streamvbyte.h
-//!     https://github.com/lemire/streamvbyte/blob/170fef1f1401960627d8a4dff08e54116de987db/include/streamvbyte.h
-//!
-//!   streamvbyte_encode.c
-//!     https://github.com/lemire/streamvbyte/blob/c43294a81501e0fdf14adc83818d47f7f9bc1bb6/src/streamvbyte_encode.c
-//!
-//!   sse41.rs
-//!     https://bitbucket.org/marshallpierce/stream-vbyte-rust/src/7635819fc2bc4d99e827124dd6f7da904218bcad/src/encode/sse41.rs
-
-use crate::*;
 use anyhow::{bail, Result};
 use std::{mem, ptr};
 
+/// Header bit value `00` indicating compression to 1 byte.
+pub const HDR_PCK_1: u8 = 0;
+/// Header bit value `01` indicating compression to 2 bytes.
+pub const HDR_PCK_2: u8 = 1;
+/// Header bit value `10` indicating compression to 3 bytes.
+pub const HDR_PCK_3: u8 = 2;
+/// Header bit value `11` indicating no compression and 4 bytes of packing.
+pub const HDR_PCK_4: u8 = 3;
+
+/// Returns the control header's size in bytes.
+#[inline]
+pub fn hdr_byt_len(unp_len: usize) -> usize {
+    (unp_len + 3) / 4
+}
+
 /// Returns the data's compressed byte length.
-/// 
-/// This does not include the header byte length.
-///
-/// Evaluates each integer's compression size.
-///
-/// Uses scalar instructions.
-/// 
-/// # Arguments
-/// 
-/// * `decs` - An uncompressed slice of u32s.
 #[inline]
 pub fn dat_byt_len(decs: &[u32]) -> usize {
+    // Compression transforms an integer to 1-byte, 2-bytes, 3-bytes, or 4-bytes.
+
+    // Convert the uncompressed integers to a slice of bytes.
+    let dec_byts = unsafe {
+        let slc = decs.as_ptr() as *const u8;
+        let dec_byt_len = std::mem::size_of_val(decs);
+        let u8_slc_ptr = ptr::slice_from_raw_parts(slc, dec_byt_len);
+        &*u8_slc_ptr
+    };
+
+    // A minimum of 1 byte is used to compress each integer.
+    // Set one byte for each integer.
+    let mut ret: usize = decs.len();
+
+    // Determine if any additional compressed bytes are needed.
+    let mut cnt: usize = 0;
+    while cnt < dec_byts.len() {
+        // Add sizes for any additional compressed bytes.
+        // Determine if minimum compression is 2-bytes, 3-bytes, or 4-bytes.
+        ret += (dec_byts[cnt + 1] > 0) as usize
+            + (dec_byts[cnt + 2] > 0) as usize
+            + (dec_byts[cnt + 3] > 0) as usize;
+
+        cnt += 4;
+    }
+    ret
+}
+
+/// Returns the data's compressed byte length.
+#[inline]
+pub fn dat_byt_len2(decs: &[u32]) -> usize {
     // Compression transforms an integer to 1-byte, 2-bytes, 3-bytes, or 4-bytes.
 
     // A minimum of 1 byte is used to compress each integer.
@@ -33,22 +57,16 @@ pub fn dat_byt_len(decs: &[u32]) -> usize {
     let mut ret: usize = decs.len();
 
     // Determine if any additional compressed bytes are needed.
-    for val in decs {
-        let val = *val;
+    for dec in decs {
+        let dec = *dec;
         // Add sizes for any additional compressed bytes.
         // Determine if minimum compression is 2-bytes, 3-bytes, or 4-bytes.
-        ret += (val > 0xFF) as usize + (val > 0xFFFF) as usize + (val > 0xFFFFFF) as usize;
+        ret += (dec > 0xFF) as usize + (dec > 0xFFFF) as usize + (dec > 0xFFFFFF) as usize;
     }
     ret
 }
 
 /// Encodes a slice of u32 integers.
-///
-/// Uses scalar instructions.
-/// 
-/// # Arguments
-/// 
-/// * `decs` - An uncompressed slice of u32s.
 pub fn enc(decs: &[u32]) -> Result<Vec<u8>> {
     // Check if there is nothing to compress.
     if decs.is_empty() {
@@ -59,7 +77,7 @@ pub fn enc(decs: &[u32]) -> Result<Vec<u8>> {
     // Layout: | Integer Count: usize bytes | Headers: bytes | Compressed Data: bytes |
     let cnt_len = mem::size_of::<usize>();
     let hdr_byt_len = hdr_byt_len(decs.len());
-    let ret = vec![0u8; cnt_len + hdr_byt_len + dat_byt_len(decs)];
+    let ret = vec![0u8; cnt_len + hdr_byt_len + dat_byt_len2(decs)];
 
     // Store the number of compressed integers.
     unsafe {
@@ -86,19 +104,28 @@ pub fn enc(decs: &[u32]) -> Result<Vec<u8>> {
         &mut *u8_slc_ptr
     };
 
-    // Setup header variables used for compression.
-    // `hdr_shf_len` cycles 0, 2, 4, 6, 0, 2, 4, 6 ...
+    // Setup header variables. Used for compression.
+    // `hdr_shf_len` cycles through 0, 2, 4, 6, 0, 2, 4, 6 ...
     let mut hdr: u8 = 0;
     let mut hdr_shf_len: u8 = 0;
 
+    // Convert the uncompressed integers to a slice of bytes.
+    let mut dec_byts = unsafe {
+        let slc = decs.as_ptr() as *const u8;
+        let dec_byt_len = std::mem::size_of_val(decs);
+        let u8_slc_ptr = ptr::slice_from_raw_parts(slc, dec_byt_len);
+        &*u8_slc_ptr
+    };
+    let dec_elm_len = std::mem::size_of::<u32>();
+
     // Iterate through each uncompressed integer.
-    for dec in decs.iter() {
+    for (idx, dec) in decs.iter().enumerate() {
         // De-reference the uncompressed integer one time as a slight optimization.
         let dec = *dec;
 
         // After four integer compressions,
-        // Write the header.
-        // Reset the header and shift length.
+        // Write a header byte.
+        // Reset the current header and shift length.
         if hdr_shf_len == 8 {
             hdrs[0] = hdr;
             hdrs = &mut hdrs[1..];
@@ -112,7 +139,11 @@ pub fn enc(decs: &[u32]) -> Result<Vec<u8>> {
         // Compress the integer.
         let pck_len = (hdr_pck + 1) as usize;
         unsafe {
-            ptr::copy_nonoverlapping(dec.to_le_bytes().as_ptr(), encs.as_mut_ptr(), pck_len);
+            ptr::copy_nonoverlapping(
+                dec_byts[idx * dec_elm_len..].as_ptr(),
+                encs.as_mut_ptr(),
+                pck_len,
+            );
         }
 
         encs = &mut encs[pck_len..];
@@ -132,9 +163,9 @@ pub fn enc(decs: &[u32]) -> Result<Vec<u8>> {
 /// Decodes a slice of u32 integers.
 ///
 /// Uses scalar instructions.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `encs` - A compressed slice of u8s.
 pub fn dec(encs: &[u8]) -> Result<Vec<u32>> {
     // Check if there is nothing to decompress.

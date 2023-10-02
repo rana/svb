@@ -9,11 +9,14 @@ pub enum Lbl {
     #[default]
     Scl,
     Enc,
+    Dat,
     A,
     B,
     C,
     D,
     E,
+    F,
+    G,
     Len(u32),
 }
 impl fmt::Display for Lbl {
@@ -21,11 +24,14 @@ impl fmt::Display for Lbl {
         match *self {
             Lbl::Scl => write!(f, "scl"),
             Lbl::Enc => write!(f, "enc"),
+            Lbl::Dat => write!(f, "dat"),
             Lbl::A => write!(f, "a"),
             Lbl::B => write!(f, "b"),
             Lbl::C => write!(f, "c"),
             Lbl::D => write!(f, "d"),
             Lbl::E => write!(f, "e"),
+            Lbl::F => write!(f, "f"),
+            Lbl::G => write!(f, "g"),
             Lbl::Len(x) => {
                 if f.alternate() { write!(f, "len") } else { write!(f, "len({})", x) }
             }
