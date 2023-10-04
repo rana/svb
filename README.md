@@ -5,7 +5,7 @@ Compresses 32-bit unsigned integers to an array of bytes.
 
 A 32-bit integer compresses to 1-byte, 2-bytes, 3-bytes, or 4-bytes.
 
-Four integers are compressed at a time with SIMD instructions.
+A block of four integers is compressed at one time with SIMD instructions.
 
 ## Byte Layout
 

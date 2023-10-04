@@ -81,6 +81,7 @@ pub fn emit_main_fn() -> TokenStream {
             let scl_dat_a = qry.sel(&[Scl, Dat, A]);
             let scl_dat_e = qry.sel(&[Scl, Dat, E]);
             let scl_dat_g = qry.sel(&[Scl, Dat, G]);
+            let smd_dat_a = qry.sel(&[Smd, Dat, A]);
 
             /// Scalar implementation: A vs B
             qry.cmp(scl_enc_a, scl_enc_b);
@@ -115,6 +116,9 @@ pub fn emit_main_fn() -> TokenStream {
             /// Scalar implementation: Dat: A vs G
             qry.cmp(scl_dat_a, scl_dat_g);
 
+            /// SIMD vs Scalar implementation: Dat: A vs A
+            qry.cmp(smd_dat_a, scl_dat_g);
+
             stdy.run(qry, itr)?;
             Ok(())
         }
@@ -145,6 +149,7 @@ pub fn emit_new_stdy() -> TokenStream {
         emit_bens_scl_dat_a,
         emit_bens_scl_dat_e,
         emit_bens_scl_dat_g,
+        emit_bens_smd_dat_a,
     ];
     tok_bens
         .iter()
@@ -438,6 +443,34 @@ pub fn emit_bens_scl_dat_g() -> TokenStream {
     // sec: end
     stm.extend(quote! {
         stdy.reg_bld(&[Scl, Dat, G], |x| {
+            #stm_inr
+        });
+    });
+
+    stm
+}
+
+pub fn emit_bens_smd_dat_a() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    for len in RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            x.ins_prm(Len(#lit_len), |tme| {
+                let vals: Vec<u32> = rnds_eql_byt().take(#lit_len).collect();
+                tme.borrow_mut().start();
+                let ret = smd_a::dat_byt_len(&vals);
+                tme.borrow_mut().stop();
+                ret
+            });
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        stdy.reg_bld(&[Smd, Dat, A], |x| {
             #stm_inr
         });
     });

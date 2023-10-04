@@ -26,6 +26,7 @@ pub fn main() -> Result<()> {
     let scl_dat_a = qry.sel(&[Scl, Dat, A]);
     let scl_dat_e = qry.sel(&[Scl, Dat, E]);
     let scl_dat_g = qry.sel(&[Scl, Dat, G]);
+    let smd_dat_a = qry.sel(&[Smd, Dat, A]);
     /// Scalar implementation: A vs B
     qry.cmp(scl_enc_a, scl_enc_b);
     /// Scalar implementation: A vs C
@@ -48,6 +49,8 @@ pub fn main() -> Result<()> {
     qry.cmp(scl_dat_a, scl_dat_e);
     /// Scalar implementation: Dat: A vs G
     qry.cmp(scl_dat_a, scl_dat_g);
+    /// SIMD vs Scalar implementation: Dat: A vs A
+    qry.cmp(smd_dat_a, scl_dat_g);
     stdy.run(qry, itr)?;
     Ok(())
 }
@@ -1498,6 +1501,151 @@ pub fn new_stdy() -> Result<Stdy<Lbl>> {
                     let vals: Vec<u32> = rnds_eql_byt().take(131072).collect();
                     tme.borrow_mut().start();
                     let ret = scl_g::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+        },
+    );
+    stdy.reg_bld(
+        &[Smd, Dat, A],
+        |x| {
+            x.ins_prm(
+                Len(16),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(16).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(32),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(32).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(64),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(64).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(128),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(128).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(256),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(256).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(512),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(512).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(1024),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(1024).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(2048),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(2048).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(4096),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(4096).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(8192),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(8192).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(16384),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(16384).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(32768),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(32768).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(65536),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(65536).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
+                    tme.borrow_mut().stop();
+                    ret
+                },
+            );
+            x.ins_prm(
+                Len(131072),
+                |tme| {
+                    let vals: Vec<u32> = rnds_eql_byt().take(131072).collect();
+                    tme.borrow_mut().start();
+                    let ret = smd_a::dat_byt_len(&vals);
                     tme.borrow_mut().stop();
                     ret
                 },

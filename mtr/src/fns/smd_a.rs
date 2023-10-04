@@ -1,8 +1,6 @@
-//! SIMD implementation of the stream variable byte compression algorithm.
+//! Lemire SIMD approach.
 
-use crate::scl;
-use crate::*;
-use anyhow::{bail, Result};
+use crate::scl_a as scl;
 use std::arch::x86_64::__m128i as m128;
 use std::arch::x86_64::_mm_adds_epu16;
 use std::arch::x86_64::_mm_loadu_si128 as load;
@@ -12,9 +10,6 @@ use std::arch::x86_64::_mm_movemask_epi8;
 use std::arch::x86_64::_mm_packus_epi16;
 use std::arch::x86_64::_mm_set1_epi16;
 use std::arch::x86_64::_mm_set1_epi8;
-use std::{mem, ptr};
-
-
 
 /// Returns the data's compressed size in bytes.
 ///
@@ -64,7 +59,7 @@ pub fn dat_byt_len(mut decs: &[u32]) -> usize {
         }
     }
 
-    // Calculate the length of the remaining integers 
+    // Calculate the length of the remaining integers
     // for scalar instructions.
     // 0&7:0, 1&7:1, 6&7:6, 8&7:0
     let rem_len = decs.len() & 7;
@@ -76,62 +71,6 @@ pub fn dat_byt_len(mut decs: &[u32]) -> usize {
     ret
 }
 
-/// Encode a slice of u32 integers.
-///
-/// Uses SIMD instructions.
-pub fn enc(decs: &[u32]) -> Result<Vec<u8>> {
-    todo!();
-}
-
-/// Decodes a slice of u32 integers.
-///
-/// Uses SIMD instructions.
-pub fn dec(encs: &[u8]) -> Result<Vec<u32>> {
-    todo!();
-}
-
-#[cfg(test)]
-mod tst {
-    use super::*;
-    use anyhow::Ok;
-    use itr::rnds_eql_byt;
-
-    #[test]
-    fn dat_byt_len_n() {
-        assert_eq!(dat_byt_len(&[u32::MIN]), 1);
-        assert_eq!(dat_byt_len(&[1 << 7]), 1);
-        assert_eq!(dat_byt_len(&[(1 << 8) - 1]), 1);
-        assert_eq!(dat_byt_len(&[1 << 8]), 2);
-        assert_eq!(dat_byt_len(&[1 << 15]), 2);
-        assert_eq!(dat_byt_len(&[(1 << 16) - 1]), 2);
-        assert_eq!(dat_byt_len(&[1 << 16]), 3);
-        assert_eq!(dat_byt_len(&[1 << 23]), 3);
-        assert_eq!(dat_byt_len(&[(1 << 23) - 1]), 3);
-        assert_eq!(dat_byt_len(&[1 << 24]), 4);
-        assert_eq!(dat_byt_len(&[1 << 31]), 4);
-        assert_eq!(dat_byt_len(&[u32::MAX]), 4);
-        let decs: Vec<u32> = rnds_eql_byt().take(2).collect();
-        assert_eq!(dat_byt_len(&decs), 3);
-        let decs: Vec<u32> = rnds_eql_byt().take(7).collect();
-        assert_eq!(dat_byt_len(&decs), 16);
-        let decs: Vec<u32> = rnds_eql_byt().take(8).collect();
-        assert_eq!(dat_byt_len(&decs), 20);
-        let decs: Vec<u32> = rnds_eql_byt().take(1024).collect();
-        assert_eq!(dat_byt_len(&decs), 2560);
-    }
-
-    #[test]
-    fn enc_dec_n() -> Result<()> {
-        for len in [0, 1, 2, 3, 4, 5, 6, 7, 8, 512, 1024] {
-            let decs_exp: Vec<u32> = rnds_eql_byt().take(len).collect();
-            let encs = enc(&decs_exp)?;
-            let decs_act = dec(&encs)?;
-            assert_eq!(decs_exp, decs_act);
-        }
-
-        Ok(())
-    }
-}
 
 /// A lookup table of compression lengths.
 pub const TBL_LENS: [u8; 256] = [

@@ -33,12 +33,13 @@ pub fn dat_byt_len(decs: &[u32]) -> usize {
     let mut ret: usize = decs.len();
 
     // Determine if any additional compressed bytes are needed.
-    for val in decs {
-        let val = *val;
+    for dec in decs {
+        let dec = *dec;
         // Add sizes for any additional compressed bytes.
         // Determine if minimum compression is 2-bytes, 3-bytes, or 4-bytes.
-        ret += (val > 0xFF) as usize + (val > 0xFFFF) as usize + (val > 0xFFFFFF) as usize;
+        ret += (dec > 0xFF) as usize + (dec > 0xFFFF) as usize + (dec > 0xFFFFFF) as usize;
     }
+    
     ret
 }
 
@@ -248,6 +249,14 @@ mod tst {
         assert_eq!(dat_byt_len(&[1 << 24]), 4);
         assert_eq!(dat_byt_len(&[1 << 31]), 4);
         assert_eq!(dat_byt_len(&[u32::MAX]), 4);
+        let decs: Vec<u32> = rnds_eql_byt().take(2).collect();
+        assert_eq!(dat_byt_len(&decs), 3);
+        let decs: Vec<u32> = rnds_eql_byt().take(7).collect();
+        assert_eq!(dat_byt_len(&decs), 16);
+        let decs: Vec<u32> = rnds_eql_byt().take(8).collect();
+        assert_eq!(dat_byt_len(&decs), 20);
+        let decs: Vec<u32> = rnds_eql_byt().take(1024).collect();
+        assert_eq!(dat_byt_len(&decs), 2560);
     }
 
     #[test]

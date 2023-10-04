@@ -12,7 +12,7 @@
 //!     https://github.com/lemire/streamvbyte/blob/c43294a81501e0fdf14adc83818d47f7f9bc1bb6/src/streamvbyte_encode.c
 //!
 pub mod scl;
-// pub mod smd;
+pub mod smd;
 
 /// Header bit value `00` indicating compression to 1 byte.
 pub const HDR_PCK_1: u8 = 0;

@@ -8,6 +8,7 @@ use std::fmt;
 pub enum Lbl {
     #[default]
     Scl,
+    Smd,
     Enc,
     Dat,
     A,
@@ -23,6 +24,7 @@ impl fmt::Display for Lbl {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Lbl::Scl => write!(f, "scl"),
+            Lbl::Smd => write!(f, "smd"),
             Lbl::Enc => write!(f, "enc"),
             Lbl::Dat => write!(f, "dat"),
             Lbl::A => write!(f, "a"),
